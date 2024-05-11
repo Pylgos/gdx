@@ -1,0 +1,45 @@
+use crate::ast::{Expr, Lit, Stmt, Program};
+use crate::lexer::TokenKind;
+use super::Ctx;
+
+grammar<'a>(ctx: &Ctx<'a>);
+
+pub Program: Program<'a> = {
+    <stmts:(<Stmt> LineEnd)*> => Program { stmts },
+}
+
+LineEnd = {
+    EofTok, NewlineTok,
+}
+
+Stmt: Stmt<'a> = {
+    <Expr> => Stmt::Expr(<>),
+}
+
+Expr: Expr<'a> = {
+    <Lit> => Expr::Lit(<>),
+}
+
+Lit: Lit = {
+    <IntLit> => Lit::Int(<>),
+}
+
+IntLit: i128 = {
+    <start:@L> IntLitTok <end:@R> => {
+        let s = ctx.src(start..end);
+        i128::from_str_radix(s, 10).unwrap()
+    }
+}
+
+
+extern {
+    type Location = u32;
+    type Error = ();
+
+    enum TokenKind {
+        IdentTok => TokenKind::Ident,
+        NewlineTok => TokenKind::Newline,
+        IntLitTok => TokenKind::IntLit,
+        EofTok => TokenKind::Eof,
+    }
+}
