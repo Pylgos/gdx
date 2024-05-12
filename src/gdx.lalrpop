@@ -1,23 +1,81 @@
-use crate::ast::{Expr, Lit, Stmt, Program};
+use crate::ast::*;
+use crate::ident::Ident;
 use crate::lexer::TokenKind;
 use super::Ctx;
 
 grammar<'a>(ctx: &Ctx<'a>);
 
 pub Program: Program<'a> = {
-    <stmts:(<Stmt> LineEnd)*> => Program { stmts },
+    <stmt_list:StmtList> EofTok => Program { stmt_list },
 }
 
-LineEnd = {
-    EofTok, NewlineTok,
+StmtList: StmtList<'a> = {
+    Lf? <stmts:(<Stmt>)*> => StmtList { stmts },
 }
 
 Stmt: Stmt<'a> = {
-    <Expr> => Stmt::Expr(<>),
+    <Expr> Lf => Stmt::Expr(<>),
+    <VarDef> => Stmt::VarDef(<>),
+    <FuncDef> => Stmt::FuncDef(<>),
+    "pass" Lf => Stmt::Pass,
 }
 
 Expr: Expr<'a> = {
     <Lit> => Expr::Lit(<>),
+}
+
+VarDef: VarDef<'a> = {
+    "var" <IdentDef> Lf => {
+        VarDef {
+            def: <>,
+        }
+    }
+}
+
+FuncDef: FuncDef<'a> = {
+    "func" <name:Ident> "(" <param_list:ParamList> ")" <result_ty:ResultSpec?> ":" Lf
+    IndentTok <body:StmtList> DedentTok => {
+        FuncDef { name, param_list, result_ty, body }
+    }
+}
+
+ResultSpec: Expr<'a> = {
+    "->" <Expr>
+}
+
+ParamList: ParamList<'a> = {
+    <mut params:(<IdentDef> ",")*> <e:IdentDef?> => {
+        if let Some(p) = e {
+            params.push(p);
+        }
+        ParamList { params }
+    }
+}
+
+IdentDef: IdentDef<'a> = {
+    <name:Ident> <ty:(":" <Expr>)?> "=" <val:Expr?> => {
+        if let Some(ty) = ty {
+            IdentDef {
+                name, ty: TySpec::Ty(ty), val,
+            }
+        } else {
+            IdentDef {
+                name, ty: TySpec::Any, val,
+            }
+        }
+    },
+    <name:Ident> ":" "=" <val:Expr> => {
+        IdentDef {
+            name, ty: TySpec::Inferred, val: Some(val),
+        }
+    }
+}
+
+Ident: Ident<'a> = {
+    <start:@L> IdentTok <end:@R> => {
+        let s = ctx.src(start..end);
+        ctx.ident_cache.new_ident(s)
+    }
 }
 
 Lit: Lit = {
@@ -37,9 +95,96 @@ extern {
     type Error = ();
 
     enum TokenKind {
+        AnnotationTok => TokenKind::Annotation,
         IdentTok => TokenKind::Ident,
-        NewlineTok => TokenKind::Newline,
         IntLitTok => TokenKind::IntLit,
+        StrLitTok => TokenKind::StrLit,
+        "<" => TokenKind::Less,
+        "<=" => TokenKind::LessEqual,
+        ">" => TokenKind::Greater,
+        ">=" => TokenKind::GreaterEqual,
+        "==" => TokenKind::EqualEqual,
+        "!=" => TokenKind::BangEqual,
+        "and" => TokenKind::And,
+        "or" => TokenKind::Or,
+        "not" => TokenKind::Not,
+        "&&" => TokenKind::AmpAmp,
+        "||" => TokenKind::PipePipe,
+        "!" => TokenKind::Bang,
+        "&" => TokenKind::Amp,
+        "|" => TokenKind::Pipe,
+        "~" => TokenKind::Tilde,
+        "^" => TokenKind::Caret,
+        "<<" => TokenKind::LessLess,
+        ">>" => TokenKind::GreaterGreater,
+        "+" => TokenKind::Plus,
+        "-" => TokenKind::Minus,
+        "*" => TokenKind::Star,
+        "**" => TokenKind::StarStar,
+        "/" => TokenKind::Slash,
+        "%" => TokenKind::Percent,
+        "=" => TokenKind::Equal,
+        "+=" => TokenKind::PlusEqual,
+        "-=" => TokenKind::MinusEqual,
+        "*=" => TokenKind::StarEqual,
+        "**=" => TokenKind::StarStarEqual,
+        "/=" => TokenKind::SlashEqual,
+        "%=" => TokenKind::PercentEqual,
+        "<<=" => TokenKind::LessLessEqual,
+        ">>=" => TokenKind::GreaterGreaterEqual,
+        "&=" => TokenKind::AmpEqual,
+        "|=" => TokenKind::PipeEqual,
+        "^=" => TokenKind::CaretEqual,
+        "if" => TokenKind::If,
+        "elif" => TokenKind::Elif,
+        "else" => TokenKind::Else,
+        "for" => TokenKind::For,
+        "while" => TokenKind::While,
+        "break" => TokenKind::Break,
+        "continue" => TokenKind::Continue,
+        "pass" => TokenKind::Pass,
+        "return" => TokenKind::Return,
+        "match" => TokenKind::Match,
+        "when" => TokenKind::When,
+        "as" => TokenKind::As,
+        "assert" => TokenKind::Assert,
+        "await" => TokenKind::Await,
+        "breakpoint" => TokenKind::Breakpoint,
+        "class" => TokenKind::Class,
+        "class_name" => TokenKind::ClassName,
+        "const" => TokenKind::Const,
+        "enum" => TokenKind::Enum,
+        "extends" => TokenKind::Extends,
+        "func" => TokenKind::Func,
+        "in" => TokenKind::In,
+        "is" => TokenKind::Is,
+        "namespace" => TokenKind::Namespace,
+        "preload" => TokenKind::Preload,
+        "self" => TokenKind::Self_,
+        "signal" => TokenKind::Signal,
+        "static" => TokenKind::Static,
+        "super" => TokenKind::Super,
+        "trait" => TokenKind::Trait,
+        "var" => TokenKind::Var,
+        "void" => TokenKind::Void,
+        "yield" => TokenKind::Yield,
+        "[" => TokenKind::BracketOpen,
+        "]" => TokenKind::BracketClose,
+        "{" => TokenKind::BraceOpen,
+        "}" => TokenKind::BraceClose,
+        "(" => TokenKind::ParenthesisOpen,
+        ")" => TokenKind::ParenthesisClose,
+        "," => TokenKind::Comma,
+        ";" => TokenKind::SemiColon,
+        "." => TokenKind::Period,
+        ".." => TokenKind::PeriodPeriod,
+        ":" => TokenKind::Colon,
+        "$" => TokenKind::Dollar,
+        "->" => TokenKind::ForwardArrow,
+        "_" => TokenKind::Underscore,
+        Lf => TokenKind::Newline,
+        IndentTok => TokenKind::Indent,
+        DedentTok => TokenKind::Dedent,
         EofTok => TokenKind::Eof,
     }
 }

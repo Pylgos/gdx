@@ -1,4 +1,4 @@
-use crate::ast::{Expr, Lit, Program, Stmt};
+use crate::ast::{Expr, Lit, Program, Stmt, VarDef};
 
 
 
@@ -24,7 +24,7 @@ impl<'a, Dst: std::io::Write> Codegen<'a, Dst> {
 
     fn gen_program(&mut self, prog: &Program) -> Result<()> {
         writeln!(self.dst, "int main() {{")?;
-        for stmt in prog.stmts.iter() {
+        for stmt in prog.stmt_list.stmts.iter() {
             self.gen_stmt(stmt)?;
         }
         writeln!(self.dst, "}}")?;
@@ -35,6 +35,15 @@ impl<'a, Dst: std::io::Write> Codegen<'a, Dst> {
         match stmt {
             Stmt::Expr(expr) => {
                 self.gen_expr(expr)?;
+            }
+            Stmt::VarDef(var_decl) => {
+
+            }
+            Stmt::FuncDef(func_def) => {
+
+            }
+            Stmt::Pass => {
+                
             }
         }
         writeln!(self.dst, ";")?;
@@ -57,6 +66,11 @@ impl<'a, Dst: std::io::Write> Codegen<'a, Dst> {
                 write!(self.dst, "{:}", val)?;
             }
         }
+        Ok(())
+    }
+
+    fn gen_var_decl(&mut self, var_decl: &VarDef) -> Result<()> {
+        // write!(self.dst, "")
         Ok(())
     }
 }
