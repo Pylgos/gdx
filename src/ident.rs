@@ -6,14 +6,14 @@ pub struct IdentCache {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Ident<'a>(ArenaIntern<'a, str>);
+pub struct IdentName<'a>(ArenaIntern<'a, str>);
 
 impl IdentCache {
     pub fn new() -> IdentCache {
         IdentCache { arena: Arena::new() }
     }
 
-    pub fn new_ident(&self, ident: &str) -> Ident {
-        Ident(self.arena.intern(ident))
+    pub fn new_ident_name(&self, ident: &str) -> IdentName {
+        IdentName(self.arena.intern(ident))
     }
 }

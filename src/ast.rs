@@ -1,4 +1,4 @@
-use crate::ident::Ident;
+use crate::{ident::IdentName, lexer::Span};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 
@@ -8,11 +8,18 @@ pub struct Program<'a> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StmtList<'a> {
-    pub stmts: Vec<Stmt<'a>>
+    pub span: Span,
+    pub stmts: Vec<Stmt<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Stmt<'a> {
+pub struct Stmt<'a> {
+    pub span: Span,
+    pub kind: StmtKind<'a>
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StmtKind<'a> {
     Pass,
     Expr(Expr<'a>),
     VarDef(VarDef<'a>),
@@ -20,7 +27,13 @@ pub enum Stmt<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Expr<'a> {
+pub struct Expr<'a> {
+    pub span: Span,
+    pub kind: ExprKind<'a>
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ExprKind<'a> {
     Ident(Ident<'a>),
     Lit(Lit),
     BinOp(BinOp<'a>),
@@ -28,6 +41,7 @@ pub enum Expr<'a> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FuncDef<'a> {
+    pub span: Span,
     pub name: Ident<'a>,
     pub param_list: ParamList<'a>,
     pub result_ty: Option<Expr<'a>>,
@@ -36,6 +50,7 @@ pub struct FuncDef<'a> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParamList<'a> {
+    pub span: Span,
     pub params: Vec<IdentDef<'a>>,
 }
 
@@ -46,9 +61,16 @@ pub struct VarDef<'a> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdentDef<'a> {
+    pub span: Span,
     pub name: Ident<'a>,
     pub ty: TySpec<'a>,
     pub val: Option<Expr<'a>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ident<'a> {
+    pub span: Span,
+    pub name: IdentName<'a>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

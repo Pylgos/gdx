@@ -32,31 +32,31 @@ impl<'a, Dst: std::io::Write> Codegen<'a, Dst> {
     }
 
     fn gen_stmt(&mut self, stmt: &Stmt) -> Result<()> {
-        match stmt {
-            Stmt::Expr(expr) => {
-                self.gen_expr(expr)?;
-            }
-            Stmt::VarDef(var_decl) => {
+        // match stmt {
+        //     Stmt::Expr(expr) => {
+        //         self.gen_expr(expr)?;
+        //     }
+        //     Stmt::VarDef(var_decl) => {
 
-            }
-            Stmt::FuncDef(func_def) => {
+        //     }
+        //     Stmt::FuncDef(func_def) => {
 
-            }
-            Stmt::Pass => {
-                
-            }
-        }
-        writeln!(self.dst, ";")?;
+        //     }
+        //     Stmt::Pass => {
+
+        //     }
+        // }
+        // writeln!(self.dst, ";")?;
         Ok(())
     }
 
     fn gen_expr(&mut self, expr: &Expr) -> Result<()> {
-        match expr {
-            Expr::Lit(lit) => {
-                self.gen_lit(lit)?;
-            }
-            _ => unreachable!(),
-        }
+        // match expr {
+        //     Expr::Lit(lit) => {
+        //         self.gen_lit(lit)?;
+        //     }
+        //     _ => unreachable!(),
+        // }
         Ok(())
     }
 

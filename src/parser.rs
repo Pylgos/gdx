@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use lalrpop_util::{lalrpop_mod, ParseError};
 
-use crate::{ast::Program, ident::IdentCache, lexer::{self, Token, TokenKind}};
+use crate::{ast::Program, ident::IdentCache, lexer::{self, Span, Token, TokenKind}};
 lalrpop_mod!(gdx);
 
 struct Ctx<'a> {
@@ -13,6 +13,10 @@ struct Ctx<'a> {
 impl<'a> Ctx<'a> {
     fn src(&self, r: Range<u32>) -> &str {
         &self.src[r.start as usize .. r.end as usize]
+    }
+
+    fn span(&self, from: u32, to: u32) -> Span {
+        Span::new(from, to)
     }
 }
 

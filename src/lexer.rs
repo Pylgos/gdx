@@ -11,6 +11,9 @@ impl Span {
     pub fn new(start: u32, end: u32) -> Span {
         Span { start, end }
     }
+    pub fn to(&self, to: Span) -> Span {
+        Span::new(self.start, to.end)
+    }
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]

@@ -1,27 +1,38 @@
 use crate::ast::*;
-use crate::ident::Ident;
 use crate::lexer::TokenKind;
 use super::Ctx;
 
 grammar<'a>(ctx: &Ctx<'a>);
 
 pub Program: Program<'a> = {
-    <stmt_list:StmtList> EofTok => Program { stmt_list },
+    <start:@L> <stmt_list:StmtList> <end:@R> EofTok => Program { stmt_list },
 }
 
 StmtList: StmtList<'a> = {
-    Lf? <stmts:(<Stmt>)*> => StmtList { stmts },
+    <start:@L> Lf? <stmts:(<Stmt>)*> <end:@R> => StmtList { span: ctx.span(start, end), stmts },
 }
 
 Stmt: Stmt<'a> = {
-    <Expr> Lf => Stmt::Expr(<>),
-    <VarDef> => Stmt::VarDef(<>),
-    <FuncDef> => Stmt::FuncDef(<>),
-    "pass" Lf => Stmt::Pass,
+    <start:@L> <kind:StmtKind> <end:@R> => {
+        Stmt { span: ctx.span(start, end), kind }
+    }
+}
+
+StmtKind: StmtKind<'a> = {
+    <Expr> Lf => StmtKind::Expr(<>),
+    <VarDef> => StmtKind::VarDef(<>),
+    <FuncDef> => StmtKind::FuncDef(<>),
+    "pass" Lf => StmtKind::Pass,
 }
 
 Expr: Expr<'a> = {
-    <Lit> => Expr::Lit(<>),
+    <start:@L> <kind:ExprKind> <end:@R> => {
+        Expr { span: ctx.span(start, end), kind }
+    }
+}
+
+ExprKind: ExprKind<'a> = {
+    <Lit> => ExprKind::Lit(<>),
 }
 
 VarDef: VarDef<'a> = {
@@ -33,9 +44,9 @@ VarDef: VarDef<'a> = {
 }
 
 FuncDef: FuncDef<'a> = {
-    "func" <name:Ident> "(" <param_list:ParamList> ")" <result_ty:ResultSpec?> ":" Lf
-    IndentTok <body:StmtList> DedentTok => {
-        FuncDef { name, param_list, result_ty, body }
+    <start:@L> "func" <name:Ident> "(" <param_list:ParamList> ")" <result_ty:ResultSpec?> ":" Lf
+    IndentTok <body:StmtList> DedentTok <end:@R> => {
+        FuncDef { span: ctx.span(start, end), name, param_list, result_ty, body }
     }
 }
 
@@ -44,29 +55,29 @@ ResultSpec: Expr<'a> = {
 }
 
 ParamList: ParamList<'a> = {
-    <mut params:(<IdentDef> ",")*> <e:IdentDef?> => {
+    <start:@L> <mut params:(<IdentDef> ",")*> <e:IdentDef?> <end:@R> => {
         if let Some(p) = e {
             params.push(p);
         }
-        ParamList { params }
+        ParamList { span: ctx.span(start, end), params }
     }
 }
 
 IdentDef: IdentDef<'a> = {
-    <name:Ident> <ty:(":" <Expr>)?> "=" <val:Expr?> => {
+    <start:@L> <name:Ident> <ty:(":" <Expr>)?> "=" <val:Expr?> <end:@R> => {
         if let Some(ty) = ty {
             IdentDef {
-                name, ty: TySpec::Ty(ty), val,
+                span: ctx.span(start, end), name, ty: TySpec::Ty(ty), val,
             }
         } else {
             IdentDef {
-                name, ty: TySpec::Any, val,
+                span: ctx.span(start, end), name, ty: TySpec::Any, val,
             }
         }
     },
-    <name:Ident> ":" "=" <val:Expr> => {
+    <start:@L> <name:Ident> ":" "=" <val:Expr> <end:@R> => {
         IdentDef {
-            name, ty: TySpec::Inferred, val: Some(val),
+            span: ctx.span(start, end), name, ty: TySpec::Inferred, val: Some(val),
         }
     }
 }
@@ -74,7 +85,7 @@ IdentDef: IdentDef<'a> = {
 Ident: Ident<'a> = {
     <start:@L> IdentTok <end:@R> => {
         let s = ctx.src(start..end);
-        ctx.ident_cache.new_ident(s)
+        Ident { span: ctx.span(start, end), name: ctx.ident_cache.new_ident_name(s) }
     }
 }
 
@@ -88,7 +99,6 @@ IntLit: i128 = {
         i128::from_str_radix(s, 10).unwrap()
     }
 }
-
 
 extern {
     type Location = u32;
