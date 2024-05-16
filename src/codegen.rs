@@ -1,16 +1,16 @@
-use crate::ast::{Expr, Lit, Program, Stmt, VarDef};
+use crate::ast::{Class, Expr, Lit, LitKind, Stmt, VarDef};
 
 
 
 pub struct Codegen<'a, Dst: std::io::Write> {
-    ast: &'a Program<'a>,
+    ast: &'a Class<'a>,
     dst: &'a mut Dst,
 }
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
 impl<'a, Dst: std::io::Write> Codegen<'a, Dst> {
-    pub fn new(ast: &'a Program<'a>, dst: &'a mut Dst) -> Self {
+    pub fn new(ast: &'a Class<'a>, dst: &'a mut Dst) -> Self {
         Self {
             ast,
             dst,
@@ -22,7 +22,7 @@ impl<'a, Dst: std::io::Write> Codegen<'a, Dst> {
         Ok(())
     }
 
-    fn gen_program(&mut self, prog: &Program) -> Result<()> {
+    fn gen_program(&mut self, prog: &Class) -> Result<()> {
         writeln!(self.dst, "int main() {{")?;
         for stmt in prog.stmt_list.stmts.iter() {
             self.gen_stmt(stmt)?;
@@ -61,10 +61,11 @@ impl<'a, Dst: std::io::Write> Codegen<'a, Dst> {
     }
 
     fn gen_lit(&mut self, lit: &Lit) -> Result<()> {
-        match lit {
-            Lit::Int(val) => {
+        match lit.kind {
+            LitKind::Int(val) => {
                 write!(self.dst, "{:}", val)?;
             }
+            _ => todo!(),
         }
         Ok(())
     }

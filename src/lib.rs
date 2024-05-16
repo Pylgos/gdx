@@ -1,3 +1,4 @@
+mod context;
 mod ast;
 mod codegen;
 mod extcc;
@@ -15,11 +16,11 @@ mod test {
     use super::*;
 
     fn compile_and_run(src: &str) {
+        let ctx = context::Ctx::new();
         let (tokens, error) = lexer::tokenize(src);
         assert_eq!(error, vec![]);
         println!("{:?}", tokens);
-        let ident_cache = ident::IdentCache::new();
-        let program = parser::parse(src, &tokens, &ident_cache).unwrap();
+        let program = parser::parse(src, &tokens, &ctx).unwrap();
         println!("{:?}", program);
         let c_filename = Path::new("tmp.c");
         let mut c_file = std::fs::File::create(c_filename).unwrap();

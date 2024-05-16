@@ -10,7 +10,7 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "gdx"
-path = "src/bin.rs"
+path = "src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,6 +20,7 @@ unicode-ident = "1"
 lalrpop-util = { version = "0.20.2" }
 internment = { version = "0.8.3", features = ["arena"] }
 indoc = "2"
+bumpalo = "3.16"
 
 [build-dependencies]
 lalrpop = "0.20.2"

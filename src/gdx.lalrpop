@@ -2,20 +2,24 @@ use crate::ast::*;
 use crate::lexer::TokenKind;
 use super::Ctx;
 
-grammar<'a>(ctx: &Ctx<'a>);
+grammar<'a, 'src>(ctx: &Ctx<'a, 'src>);
 
-pub Program: Program<'a> = {
-    <start:@L> <stmt_list:StmtList> <end:@R> EofTok => Program { stmt_list },
+pub Class: &'a Class<'a> = {
+    <start:@L> <stmt_list:StmtList> <end:@R> EofTok => ctx.alloc(Class {
+        span: ctx.span(start, end), stmt_list,
+    }),
 }
 
-StmtList: StmtList<'a> = {
-    <start:@L> Lf? <stmts:(<Stmt>)*> <end:@R> => StmtList { span: ctx.span(start, end), stmts },
+StmtList: &'a StmtList<'a> = {
+    <start:@L> Lf? <stmts:(<Stmt>)*> <end:@R> => ctx.alloc(StmtList {
+        span: ctx.span(start, end), stmts: ctx.slice(&stmts[..]),
+    }),
 }
 
-Stmt: Stmt<'a> = {
-    <start:@L> <kind:StmtKind> <end:@R> => {
-        Stmt { span: ctx.span(start, end), kind }
-    }
+Stmt: &'a Stmt<'a> = {
+    <start:@L> <kind:StmtKind> <end:@R> => ctx.alloc(Stmt {
+        span: ctx.span(start, end), kind,
+    }),
 }
 
 StmtKind: StmtKind<'a> = {
@@ -25,72 +29,70 @@ StmtKind: StmtKind<'a> = {
     "pass" Lf => StmtKind::Pass,
 }
 
-Expr: Expr<'a> = {
-    <start:@L> <kind:ExprKind> <end:@R> => {
-        Expr { span: ctx.span(start, end), kind }
-    }
+Expr: &'a Expr<'a> = {
+    <start:@L> <kind:ExprKind> <end:@R> => ctx.alloc(Expr {
+        span: ctx.span(start, end), kind
+    }),
 }
 
 ExprKind: ExprKind<'a> = {
     <Lit> => ExprKind::Lit(<>),
 }
 
-VarDef: VarDef<'a> = {
-    "var" <IdentDef> Lf => {
-        VarDef {
-            def: <>,
-        }
-    }
+VarDef: &'a VarDef<'a> = {
+    <start:@L> "var" <def:IdentDef> <end:@R> Lf => ctx.alloc(VarDef {
+        span: ctx.span(start, end),
+        def: def,
+    })
 }
 
-FuncDef: FuncDef<'a> = {
+FuncDef: &'a FuncDef<'a> = {
     <start:@L> "func" <name:Ident> "(" <param_list:ParamList> ")" <result_ty:ResultSpec?> ":" Lf
-    IndentTok <body:StmtList> DedentTok <end:@R> => {
-        FuncDef { span: ctx.span(start, end), name, param_list, result_ty, body }
-    }
+    IndentTok <body:StmtList> DedentTok <end:@R> => ctx.alloc(FuncDef {
+        span: ctx.span(start, end), name, param_list, result_ty, body,
+    }),
 }
 
-ResultSpec: Expr<'a> = {
-    "->" <Expr>
+ResultSpec: &'a Expr<'a> = {
+    "->" <Expr>,
 }
 
-ParamList: ParamList<'a> = {
+ParamList: &'a ParamList<'a> = {
     <start:@L> <mut params:(<IdentDef> ",")*> <e:IdentDef?> <end:@R> => {
         if let Some(p) = e {
             params.push(p);
         }
-        ParamList { span: ctx.span(start, end), params }
+        ctx.alloc(ParamList { span: ctx.span(start, end), params: ctx.slice(&params[..]), })
     }
 }
 
-IdentDef: IdentDef<'a> = {
-    <start:@L> <name:Ident> <ty:(":" <Expr>)?> "=" <val:Expr?> <end:@R> => {
-        if let Some(ty) = ty {
-            IdentDef {
-                span: ctx.span(start, end), name, ty: TySpec::Ty(ty), val,
-            }
-        } else {
-            IdentDef {
-                span: ctx.span(start, end), name, ty: TySpec::Any, val,
-            }
-        }
-    },
-    <start:@L> <name:Ident> ":" "=" <val:Expr> <end:@R> => {
+IdentDef: &'a IdentDef<'a> = {
+    <start:@L> <name:Ident> <ty:(":" <Expr>)?> "=" <val:Expr?> <end:@R> => ctx.alloc(
         IdentDef {
-            span: ctx.span(start, end), name, ty: TySpec::Inferred, val: Some(val),
+            span: ctx.span(start, end), name, ty: ty, val, strict_type: ty.is_some(),
         }
-    }
+    ),
+    <start:@L> <name:Ident> ":" "=" <val:Expr> <end:@R> => ctx.alloc(IdentDef {
+            span: ctx.span(start, end), name, ty: None, val: Some(val), strict_type: true,
+    }),
 }
 
-Ident: Ident<'a> = {
+Ident: &'a Ident<'a> = {
     <start:@L> IdentTok <end:@R> => {
         let s = ctx.src(start..end);
-        Ident { span: ctx.span(start, end), name: ctx.ident_cache.new_ident_name(s) }
+        ctx.alloc(Ident { span: ctx.span(start, end), name: ctx.new_ident_name(s) })
     }
 }
 
-Lit: Lit = {
-    <IntLit> => Lit::Int(<>),
+Lit: &'a Lit<'a> = {
+    <start:@L> <kind:LitKind> <end:@R> => ctx.alloc(Lit {
+        span: ctx.span(start, end),
+        kind,
+    }),
+}
+
+LitKind: LitKind<'a> = {
+    <IntLit> => LitKind::Int(<>),
 }
 
 IntLit: i128 = {
