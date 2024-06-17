@@ -1,7 +1,7 @@
 use std::str::CharIndices;
 use unicode_ident::{is_xid_start, is_xid_continue};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {
     pub start: u32,
     pub end: u32,
@@ -60,7 +60,7 @@ pub fn tokenize(source: &str) -> (Vec<Token>, Vec<LexError>) {
     (lex.tokens, lex.errors)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum IndentKind {
     Tab,
     Space
@@ -203,7 +203,7 @@ impl <'a> Lexer<'a> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenKind {
     // Basic
     Annotation,

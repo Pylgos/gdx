@@ -5,7 +5,7 @@ pub struct IdentCache {
     arena: Arena<str>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct IdentName<'a>(ArenaIntern<'a, str>);
 
 impl IdentCache {

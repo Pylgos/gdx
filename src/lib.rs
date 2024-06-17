@@ -2,7 +2,7 @@ mod context;
 mod ast;
 mod codegen;
 mod extcc;
-mod hir;
+mod thir;
 mod ident;
 mod lexer;
 mod parser;
@@ -12,6 +12,9 @@ mod test {
     use std::{path::Path, process::Command};
 
     use indoc::indoc;
+    use internment::Arena;
+
+    use self::thir::ty::TyKind;
 
     use super::*;
 
@@ -39,5 +42,7 @@ mod test {
             func hello():
                 var x = 2147483647
         "});
+
+        let a: Arena<TyKind> = Arena::new();
     }
 }
